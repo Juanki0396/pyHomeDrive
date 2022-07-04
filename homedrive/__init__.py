@@ -19,8 +19,16 @@ def create_app() -> Flask:
     def home_page():
         return render_template("home.html")
 
+    @app.route("/files")
+    def files_page():
+        return render_template("files.html")
+
     from . import db
 
     db.init_app(app)  # Register database methods on the app
+
+    from . import auth
+
+    app.register_blueprint(auth.bp)
 
     return app
