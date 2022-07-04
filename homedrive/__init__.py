@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, render_template
 
 
 def create_app() -> Flask:
@@ -17,7 +17,7 @@ def create_app() -> Flask:
     @app.route("/")
     @app.route("/home")
     def home_page():
-        return "<h1>Home Page</h1>"
+        return render_template("base.html")
 
     from . import db
 
