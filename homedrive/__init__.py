@@ -17,7 +17,7 @@ def create_app() -> Flask:
     @app.route("/")
     @app.route("/home")
     def home_page():
-        return render_template("base.html")
+        return render_template("home.html")
 
     from . import db
 
