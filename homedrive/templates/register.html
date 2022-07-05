@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Register{% endblock %}
+
+{% block body %}
+
+<div class="container-md align-content-center">
+    <form method="post">
+        <h1 class="h1 text-center">Create a new account</h1>
+        <div class="mb-3">
+            <label class="form-label" for="username">Username:</label>
+            <input type="text" class="form-control" id="username" name="username" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="email">Email</label>
+            <input type="email" class="form-control" id="email" name="email" placeholder="account@example.com" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="password">Password</label>
+            <input type="password" class="form-control" id="password" name="password" required>
+        </div>
+        <div class="mb-3 align-content-center">
+            <button type="submit" class="btn btn-dark">Submit</button>
+        </div>
+    </form>
+    
+</div>
+
+{% endblock %}
