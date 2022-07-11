@@ -1,53 +1,49 @@
 import sqlite3
+import typing
 
 import click
-from flask import Flask, current_app
-from flask.cli import with_appcontext
+import flask
+import flask.cli
 
 
-class DatabaseConnection:
-    def __init__(self, database_path: str) -> None:
-        """Instanciate a DatabaseConnection handler. It offers a Context Manager to create database connections
-        safely.
+def get_db() -> sqlite3.Connection:
+    """Create a database connection for the current app context and store it in
+    the request.g object
 
-        Args:
-            database_path (str): Path of the database file
-        """
-        self.database_path = database_path
-        self.db: sqlite3.Connection = None
-
-    def __enter__(self) -> sqlite3.Cursor:
-        """Start a database conection and return a cursor object."""
-        self.db = sqlite3.connect(
-            self.database_path, detect_types=sqlite3.PARSE_DECLTYPES
-        )
-
-        self.db.row_factory = sqlite3.Row
-
-        return self.db.cursor()
-
-    def __exit__(self, exc_type, exc_value, exc_traceback) -> bool:
-        """Commit or close database connection if any error arise."""
-        if exc_type is sqlite3.Error:
-            print(exc_type)
-            self.db.close()
-            return False
-
-        self.db.commit()
-        self.db.close()
-
-        return True
+    Returns:
+        sqlite3.Connection: Database connection
+    """
+    db = getattr(flask.g, "_database", None)
+    if db is None:
+        flask.g._database = sqlite3.connect(flask.current_app.config["DATABASE"])
+        db = flask.g._database
+    db.row_factory = sqlite3.Row
+    return db
 
 
-def get_db() -> DatabaseConnection:
-    """Return a DatabaseConection object for the current Flask app."""
-    return DatabaseConnection(current_app.config["DATABASE"])
+def close_connection(exception: Exception) -> None:
+    """Close database connection stored in flask.g object related to the app context.
+
+    Args:
+        exception (Exception): Any kind of raised exception
+    """
+    db = getattr(flask.g, "_database", None)
+    if db is not None:
+        db.close()
+
+
+def query_db(query: str, args: typing.Tuple[typing.Any]) -> typing.List[sqlite3.Row]:
+    """Returns a query from the app database"""
+    cur = get_db().execute(query, args)
+    results = cur.fetchall()
+    cur.close()
+    return results
 
 
 def init_db() -> None:
     """ "Initialize the database using the sql schema."""
     database = get_db()
-    with current_app.open_resource("schema.sql") as file:
+    with flask.current_app.open_resource("schema.sql") as file:
         sql_command = file.read().decode("utf8")
 
     with database as db:
@@ -55,15 +51,16 @@ def init_db() -> None:
 
 
 @click.command("init-db")
-@with_appcontext
+@flask.cli.with_appcontext
 def init_db_command():
     init_db()
     click.echo("Initialized the database.")
 
 
-def init_app(app: Flask) -> None:
+def init_app(app: flask.Flask) -> None:
     """Register the init-db command in the current app."""
     app.cli.add_command(init_db_command)
+    app.teardown_appcontext(close_connection)
 
 
 if __name__ == "__main__":
